@@ -1235,6 +1235,17 @@
   var CALENDAR_DATA = {"generatedAt":null,"weekStart":null,"events":[]};
   // CALENDAR_DATA:END
 
+  function refreshCalendarData() {
+    fetch("calendar_data.json", { cache: "no-store" })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        CALENDAR_DATA = data;
+        renderHome();
+      })
+      .catch(function () { /* not reachable in this hosting context — keep the data baked in above */ });
+  }
+
   var CATEGORIES = [
     { key: "produce", label: "Produce" },
     { key: "meat", label: "Meat & Seafood" },
@@ -2392,5 +2403,6 @@
   renderRecipes();
   renderGroceryList();
   renderHome();
+  refreshCalendarData();
 })();
 </script>
