@@ -193,6 +193,103 @@
   }
   h2 .wip-badge { margin-left: 8px; vertical-align: middle; }
 
+  .note-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--marigold);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .tab-btn[aria-selected="true"] .note-count-badge { background: rgba(255, 255, 255, 0.3); }
+
+  .note-form {
+    display: grid;
+    grid-template-columns: 1fr 200px auto;
+    gap: 12px;
+    align-items: end;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .note-field-text textarea {
+    width: 100%;
+    resize: vertical;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .note-field-tag select {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 14px;
+  }
+  .note-add-btn { white-space: nowrap; }
+
+  @media (max-width: 700px) {
+    .note-form { grid-template-columns: 1fr; }
+  }
+
+  .note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .note-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    box-shadow: var(--shadow);
+  }
+  .note-card-body { flex: 1; min-width: 0; }
+  .note-card-text {
+    margin: 0 0 6px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .note-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+  .note-tag-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--azul-tint);
+    color: var(--azul-deep);
+    font-weight: 600;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .note-card .icon-btn { flex: none; }
+
   .panel { display: none; }
   .panel.active { display: block; }
 
@@ -1039,6 +1136,11 @@
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v6a2 2 0 0 0 2 2v8M6 2v16M8 2v6M4 2v6M14 2c-1.5 2-1.5 6 0 8v8"/></svg>
         Recipes
       </button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="notes">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h10a1 1 0 0 1 1 1v9l-3 3H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M7 7h6M7 10h6M7 13h3"/></svg>
+        Notes
+        <span class="note-count-badge" id="notesCountBadge" hidden>0</span>
+      </button>
       <button class="tab-btn locked" role="tab" aria-selected="false" data-tab="finances" disabled>
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7.5"/><path d="M10 6v8M12.5 8.2c0-1-1-1.7-2.5-1.7s-2.5.7-2.5 1.7 1 1.4 2.5 1.7 2.5.7 2.5 1.7-1 1.7-2.5 1.7-2.5-.7-2.5-1.7"/></svg>
         Finances <span class="wip-badge">Under construction</span>
@@ -1123,6 +1225,38 @@
         </div>
       </aside>
     </div>
+  </section>
+
+  <!-- NOTES PANEL -->
+  <section class="panel" id="panel-notes">
+    <div class="section-toolbar">
+      <h2>Notes<span class="count" id="noteCount"></span></h2>
+    </div>
+
+    <form id="noteForm" class="note-form">
+      <div class="field note-field-text">
+        <label for="noteText">New note</label>
+        <textarea id="noteText" rows="2" required placeholder="Jot something down…"></textarea>
+      </div>
+      <div class="field note-field-tag">
+        <label for="noteTag">Relates to</label>
+        <select id="noteTag">
+          <option value="general">General</option>
+          <option value="home">Home</option>
+          <option value="recipes">Recipes</option>
+          <option value="finances">Finances</option>
+          <option value="projects">Home Projects</option>
+          <option value="priorities">Priorities</option>
+        </select>
+      </div>
+      <button type="submit" class="btn note-add-btn">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 4v12M4 10h12"/></svg>
+        Add Note
+      </button>
+    </form>
+
+    <div class="filter-row" id="noteFilterRow"></div>
+    <div class="note-list" id="noteList"></div>
   </section>
 
   <!-- COMING SOON PANELS -->
@@ -1640,6 +1774,7 @@
 
   var state = loadState();
   if (!state.dinnerPlan) state.dinnerPlan = {};
+  if (!state.notes) state.notes = [];
   var storageOk = true;
   mergeNewRecipes(addedRecipesJuly2026());
   mergeNewRecipes(addedRecipesJuly2026b());
@@ -2515,6 +2650,113 @@
     renderHome();
   });
 
+  // ---------- rendering: notes ----------
+
+  var NOTE_TAGS = {
+    general: "General",
+    home: "Home",
+    recipes: "Recipes",
+    finances: "Finances",
+    projects: "Home Projects",
+    priorities: "Priorities"
+  };
+  var noteFilter = "All";
+
+  function updateNotesBadge() {
+    var badge = document.getElementById("notesCountBadge");
+    var n = state.notes.length;
+    badge.textContent = String(n);
+    badge.hidden = n === 0;
+  }
+
+  function renderNoteFilters() {
+    var row = document.getElementById("noteFilterRow");
+    row.innerHTML = "";
+    var tags = ["All"].concat(Object.keys(NOTE_TAGS).filter(function (key) {
+      return state.notes.some(function (n) { return n.tag === key; });
+    }));
+    tags.forEach(function (t) {
+      var b = document.createElement("button");
+      b.className = "chip";
+      b.textContent = t === "All" ? "All" : NOTE_TAGS[t];
+      b.setAttribute("aria-pressed", String(t === noteFilter));
+      b.addEventListener("click", function () { noteFilter = t; renderNoteFilters(); renderNotes(); });
+      row.appendChild(b);
+    });
+  }
+
+  function renderNotes() {
+    updateNotesBadge();
+    document.getElementById("noteCount").textContent = " (" + state.notes.length + ")";
+    renderNoteFilters();
+
+    var list = document.getElementById("noteList");
+    list.innerHTML = "";
+
+    var notes = state.notes.filter(function (n) { return noteFilter === "All" || n.tag === noteFilter; })
+      .slice()
+      .sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+
+    if (notes.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = state.notes.length === 0
+        ? "No notes yet. Jot something down above."
+        : "No notes tagged " + NOTE_TAGS[noteFilter] + ".";
+      list.appendChild(empty);
+      return;
+    }
+
+    notes.forEach(function (n) {
+      var card = document.createElement("div");
+      card.className = "note-card";
+
+      var body = document.createElement("div");
+      body.className = "note-card-body";
+      var text = document.createElement("p");
+      text.className = "note-card-text";
+      text.textContent = n.text;
+      var meta = document.createElement("div");
+      meta.className = "note-card-meta";
+      var pill = document.createElement("span");
+      pill.className = "note-tag-pill";
+      pill.textContent = NOTE_TAGS[n.tag] || "General";
+      var when = document.createElement("span");
+      var d = new Date(n.createdAt);
+      when.textContent = isNaN(d.getTime()) ? "" : (MONTH_ABBR[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear());
+      meta.appendChild(pill);
+      meta.appendChild(when);
+      body.appendChild(text);
+      body.appendChild(meta);
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.setAttribute("aria-label", "Delete note");
+      delBtn.innerHTML = "<svg viewBox='0 0 20 20' fill='none' stroke='currentColor' stroke-width='1.5'><path d='M4.5 6h11M8 6V4.5h4V6M6 6l.6 9.5h6.8L14 6'/></svg>";
+      delBtn.addEventListener("click", function () {
+        state.notes = state.notes.filter(function (x) { return x.id !== n.id; });
+        saveState();
+        renderNotes();
+      });
+
+      card.appendChild(body);
+      card.appendChild(delBtn);
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById("noteForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var textEl = document.getElementById("noteText");
+    var tagEl = document.getElementById("noteTag");
+    var text = textEl.value.trim();
+    if (!text) return;
+    state.notes.push({ id: uid(), text: text, tag: tagEl.value, createdAt: new Date().toISOString() });
+    saveState();
+    textEl.value = "";
+    renderNotes();
+  });
+
   // ---------- init ----------
 
   if (!storageOk) showToast("Note: this browser is blocking saved storage — changes won't persist.");
@@ -2522,6 +2764,7 @@
   renderRecipes();
   renderGroceryList();
   renderHome();
+  renderNotes();
   refreshCalendarData();
 })();
 </script>
