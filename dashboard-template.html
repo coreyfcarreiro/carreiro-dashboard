@@ -1717,6 +1717,12 @@
 
   function renderSyncNote() {
     var el = document.getElementById("calSyncNote");
+    if (CALENDAR_DATA.error) {
+      el.textContent = "Calendar sync error: " + CALENDAR_DATA.error;
+      el.style.color = "var(--clay)";
+      return;
+    }
+    el.style.color = "";
     if (!CALENDAR_DATA.generatedAt) {
       el.textContent = "Calendar sync hasn't run yet.";
       return;
