@@ -1076,13 +1076,13 @@
         </div>
 
         <div class="week-head">
-          <h2>This Week</h2>
+          <h2>Next 7 Days</h2>
           <p id="calSyncNote" class="sync-note"></p>
         </div>
         <div class="week-columns" id="weekColumns"></div>
 
         <div class="dinner-strip-head">
-          <h3>This Week's Dinners</h3>
+          <h3>Upcoming Dinners</h3>
         </div>
         <div class="dinner-strip" id="dinnerStrip"></div>
       </div>
@@ -1721,10 +1721,10 @@
 
   function weekDateKeys() {
     var today = new Date();
-    var sunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+    var start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     var out = [];
     for (var i = 0; i < 7; i++) {
-      var d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
       out.push({ key: localDateKey(d), date: d });
     }
     return out;
@@ -1746,6 +1746,7 @@
     CALENDAR_DATA.events.forEach(function (e) {
       var info = parseLocalDT(e.start);
       if (!info || !dateByKey.hasOwnProperty(info.dateKey)) return;
+      if (info.dateKey < todayKeyStr) return;
       var bucket = groups.hasOwnProperty(e.source) ? e.source : "corey";
       groups[bucket].push(e);
     });
@@ -1771,7 +1772,7 @@
       if (list.length === 0) {
         var p = document.createElement("p");
         p.className = "empty-note";
-        p.textContent = "No events this week.";
+        p.textContent = "No upcoming events in the next 7 days.";
         col.appendChild(p);
       } else {
         list.forEach(function (e) {
@@ -1805,7 +1806,7 @@
     var container = document.getElementById("dinnerStrip");
     container.innerHTML = "";
     var todayKeyStr = localDateKey(new Date());
-    weekDateKeys().forEach(function (k) {
+    weekDateKeys().filter(function (k) { return k.key >= todayKeyStr; }).forEach(function (k) {
       var chip = document.createElement("div");
       chip.className = "dinner-chip" + (k.key === todayKeyStr ? " is-today" : "");
       var h5 = document.createElement("h5");
