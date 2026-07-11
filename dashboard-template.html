@@ -884,56 +884,101 @@
   .week-head h2 { font-size: 20px; margin: 0; }
   .sync-note { font-size: 12px; color: var(--ink-soft); margin: 0; }
 
-  .week-grid {
+  .week-columns {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+  @media (max-width: 820px) {
+    .week-columns { grid-template-columns: 1fr; }
   }
 
-  .day-card {
+  .person-column {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    min-height: 140px;
+  }
+  .person-column h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Iowan Old Style", Georgia, serif;
+    font-size: 16px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  .person-column h4 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--azul); }
+  .person-column.tamara h4 .dot { background: var(--marigold); }
+  .person-column.both h4 .dot { background: var(--sage); }
+
+  .pc-event {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--line);
+  }
+  .pc-event:last-child { border-bottom: none; }
+  .pc-event .pc-date {
+    flex: none;
+    width: 58px;
+    color: var(--ink-soft);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding-top: 2px;
+  }
+  .pc-event .pc-info { flex: 1; min-width: 0; }
+  .pc-event .pc-title { display: block; font-size: 13px; color: var(--ink); }
+  .pc-event .pc-time { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+
+  .dinner-strip-head { margin: 0 0 12px; }
+  .dinner-strip-head h3 {
+    font-family: "Iowan Old Style", Georgia, serif;
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .dinner-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  @media (max-width: 820px) {
+    .dinner-strip { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .dinner-strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+  }
+
+  .dinner-chip {
     background: var(--paper-raised);
     border: 1px solid var(--line);
     border-radius: 10px;
-    padding: 13px 14px;
+    padding: 11px 12px;
     box-shadow: var(--shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-height: 150px;
   }
-  .day-card.is-today { border-color: var(--azul); box-shadow: 0 0 0 1px var(--azul), var(--shadow); }
-  .day-card h4 {
-    font-family: "Iowan Old Style", Georgia, serif;
-    font-size: 14.5px;
-    margin: 0;
-    color: var(--ink);
+  .dinner-chip.is-today { border-color: var(--azul); box-shadow: 0 0 0 1px var(--azul), var(--shadow); }
+  .dinner-chip h5 {
+    margin: 0 0 7px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--ink-soft);
+    font-weight: 700;
   }
-  .day-card h4 span { color: var(--ink-soft); font-weight: 400; font-size: 12px; }
-
-  .day-events { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .day-event {
-    font-size: 12px;
-    line-height: 1.35;
-    color: var(--ink);
-    display: flex;
-    gap: 5px;
-  }
-  .day-event .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; background: var(--azul); }
-  .day-event.tamara .dot { background: var(--marigold); }
-  .day-event.both .dot { background: var(--sage); }
-  .day-event .t { color: var(--ink-soft); flex: none; }
-
-  .day-dinner {
-    border-top: 1px dashed var(--line);
-    padding-top: 8px;
-  }
-  .day-dinner select {
+  .dinner-chip select {
     width: 100%;
     border: 1px solid var(--line);
     background: var(--paper);
     color: var(--ink-soft);
     border-radius: 6px;
-    padding: 5px 6px;
+    padding: 6px 7px;
     font-size: 11.5px;
     font-family: inherit;
   }
@@ -1019,7 +1064,12 @@
           <h2>This Week</h2>
           <p id="calSyncNote" class="sync-note"></p>
         </div>
-        <div class="week-grid" id="weekGrid"></div>
+        <div class="week-columns" id="weekColumns"></div>
+
+        <div class="dinner-strip-head">
+          <h3>This Week's Dinners</h3>
+        </div>
+        <div class="dinner-strip" id="dinnerStrip"></div>
       </div>
     </div>
   </section>
@@ -1654,63 +1704,100 @@
     }
   }
 
-  function renderWeekGrid() {
-    var grid = document.getElementById("weekGrid");
-    grid.innerHTML = "";
+  function weekDateKeys() {
     var today = new Date();
-    var todayKeyStr = localDateKey(today);
     var sunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+    var out = [];
     for (var i = 0; i < 7; i++) {
       var d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
-      var key = localDateKey(d);
-      var card = document.createElement("div");
-      card.className = "day-card" + (key === todayKeyStr ? " is-today" : "");
+      out.push({ key: localDateKey(d), date: d });
+    }
+    return out;
+  }
 
+  function personLabel(person) {
+    return person === "both" ? "Both" : (person === "tamara" ? "Tamara" : "Corey");
+  }
+
+  function renderWeekColumns() {
+    var container = document.getElementById("weekColumns");
+    container.innerHTML = "";
+    var weekKeys = weekDateKeys();
+    var dateByKey = {};
+    weekKeys.forEach(function (k) { dateByKey[k.key] = k.date; });
+
+    var groups = { corey: [], tamara: [], both: [] };
+    CALENDAR_DATA.events.forEach(function (e) {
+      var info = parseLocalDT(e.start);
+      if (!info || !dateByKey.hasOwnProperty(info.dateKey)) return;
+      var bucket = groups.hasOwnProperty(e.source) ? e.source : "corey";
+      groups[bucket].push(e);
+    });
+
+    ["corey", "tamara", "both"].forEach(function (person) {
+      var list = groups[person].slice().sort(function (a, b) {
+        var ia = parseLocalDT(a.start), ib = parseLocalDT(b.start);
+        if (ia.dateKey !== ib.dateKey) return ia.dateKey < ib.dateKey ? -1 : 1;
+        if (a.allDay && !b.allDay) return -1;
+        if (!a.allDay && b.allDay) return 1;
+        return (ia.hh * 60 + ia.mm) - (ib.hh * 60 + ib.mm);
+      });
+
+      var col = document.createElement("div");
+      col.className = "person-column " + person;
       var h4 = document.createElement("h4");
-      h4.textContent = DAY_ABBR[d.getDay()] + " ";
-      var span = document.createElement("span");
-      span.textContent = MONTH_ABBR[d.getMonth()] + " " + d.getDate();
-      h4.appendChild(span);
-      card.appendChild(h4);
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      h4.appendChild(dot);
+      h4.appendChild(document.createTextNode(personLabel(person)));
+      col.appendChild(h4);
 
-      var eventsWrap = document.createElement("div");
-      eventsWrap.className = "day-events";
-      var dayEvents = eventsForDateKey(key);
-      if (dayEvents.length === 0) {
+      if (list.length === 0) {
         var p = document.createElement("p");
         p.className = "empty-note";
-        p.style.fontSize = "11.5px";
-        p.style.padding = "0";
-        p.textContent = "No events";
-        eventsWrap.appendChild(p);
+        p.textContent = "No events this week.";
+        col.appendChild(p);
       } else {
-        dayEvents.forEach(function (e) {
+        list.forEach(function (e) {
+          var info = parseLocalDT(e.start);
+          var d = dateByKey[info.dateKey];
           var row = document.createElement("div");
-          row.className = "day-event" + sourceClass(e.source);
-          var dot = document.createElement("span");
-          dot.className = "dot";
-          var textWrap = document.createElement("span");
-          if (!e.allDay) {
-            var timeSpan = document.createElement("span");
-            timeSpan.className = "t";
-            timeSpan.textContent = fmtEventTime(e) + " ";
-            textWrap.appendChild(timeSpan);
-          }
-          textWrap.appendChild(document.createTextNode(e.title));
-          row.appendChild(dot);
-          row.appendChild(textWrap);
-          eventsWrap.appendChild(row);
+          row.className = "pc-event";
+          var dateSpan = document.createElement("span");
+          dateSpan.className = "pc-date";
+          dateSpan.textContent = DAY_ABBR[d.getDay()] + " " + MONTH_ABBR[d.getMonth()] + " " + d.getDate();
+          var infoWrap = document.createElement("span");
+          infoWrap.className = "pc-info";
+          var titleSpan = document.createElement("span");
+          titleSpan.className = "pc-title";
+          titleSpan.textContent = e.title;
+          var timeSpan = document.createElement("span");
+          timeSpan.className = "pc-time";
+          timeSpan.textContent = fmtEventTime(e);
+          infoWrap.appendChild(titleSpan);
+          infoWrap.appendChild(timeSpan);
+          row.appendChild(dateSpan);
+          row.appendChild(infoWrap);
+          col.appendChild(row);
         });
       }
-      card.appendChild(eventsWrap);
+      container.appendChild(col);
+    });
+  }
 
-      var dinnerWrap = document.createElement("div");
-      dinnerWrap.className = "day-dinner";
-      dinnerWrap.appendChild(buildDinnerSelect(key, "Dinner…"));
-      card.appendChild(dinnerWrap);
-
-      grid.appendChild(card);
-    }
+  function renderDinnerStrip() {
+    var container = document.getElementById("dinnerStrip");
+    container.innerHTML = "";
+    var todayKeyStr = localDateKey(new Date());
+    weekDateKeys().forEach(function (k) {
+      var chip = document.createElement("div");
+      chip.className = "dinner-chip" + (k.key === todayKeyStr ? " is-today" : "");
+      var h5 = document.createElement("h5");
+      h5.textContent = DAY_ABBR[k.date.getDay()] + " " + MONTH_ABBR[k.date.getMonth()] + " " + k.date.getDate();
+      chip.appendChild(h5);
+      chip.appendChild(buildDinnerSelect(k.key, "Dinner…"));
+      container.appendChild(chip);
+    });
   }
 
   function renderSyncNote() {
@@ -1739,7 +1826,8 @@
     document.getElementById("todayDateHeading").textContent = DAY_NAMES[today.getDay()] + ", " + MONTH_NAMES[today.getMonth()] + " " + today.getDate();
     renderTodayEvents();
     renderTonightDinner();
-    renderWeekGrid();
+    renderWeekColumns();
+    renderDinnerStrip();
     renderSyncNote();
   }
 
