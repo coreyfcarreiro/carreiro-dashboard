@@ -1359,11 +1359,24 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script>
 (function () {
   "use strict";
 
   var STORAGE_KEY = "carreiro-dashboard-v1";
+
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDZejAoUcAh62WFBZDWff_gc7_kkcYW9G8",
+    authDomain: "carreiro-dashboard.firebaseapp.com",
+    databaseURL: "https://carreiro-dashboard-default-rtdb.firebaseio.com",
+    projectId: "carreiro-dashboard",
+    storageBucket: "carreiro-dashboard.firebasestorage.app",
+    messagingSenderId: "70283339489",
+    appId: "1:70283339489:web:60b15045d27713191fb9a0"
+  };
+  var fbRef = null;
 
   // CALENDAR_DATA:START
   var CALENDAR_DATA = {"generatedAt":null,"weekStart":null,"events":[]};
@@ -1673,7 +1686,7 @@
   function starterRecipes() {
     var base = [
       {
-        id: uid(), name: "Caldo Verde (Portuguese Kale Soup)", type: "Dinner", servings: 6,
+        id: "r-caldo-verde", name: "Caldo Verde (Portuguese Kale Soup)", type: "Dinner", servings: 6,
         notes: "Simmer linguiça and potatoes in broth, blend half the potatoes back in for body, then stir in the kale at the end just until wilted.",
         ingredients: [
           ing("linguiça, sliced", "1", "lb", "meat"),
@@ -1688,7 +1701,7 @@
         ]
       },
       {
-        id: uid(), name: "Sunday Roast Chicken and Rice", type: "Dinner", servings: 5,
+        id: "r-sunday-roast-chicken-rice", name: "Sunday Roast Chicken and Rice", type: "Dinner", servings: 5,
         notes: "",
         ingredients: [
           ing("whole chicken (about 4 lb)", "1", "", "meat"),
@@ -1705,7 +1718,7 @@
         ]
       },
       {
-        id: uid(), name: "Weeknight Beef Tacos", type: "Dinner", servings: 4,
+        id: "r-weeknight-beef-tacos", name: "Weeknight Beef Tacos", type: "Dinner", servings: 4,
         notes: "",
         ingredients: [
           ing("ground beef", "1", "lb", "meat"),
@@ -1721,7 +1734,7 @@
         ]
       },
       {
-        id: uid(), name: "Blueberry Pancakes", type: "Breakfast", servings: 4,
+        id: "r-blueberry-pancakes", name: "Blueberry Pancakes", type: "Breakfast", servings: 4,
         notes: "",
         ingredients: [
           ing("all-purpose flour", "2", "cups", "bakery"),
@@ -1737,7 +1750,7 @@
         ]
       },
       {
-        id: uid(), name: "Garlic Butter Shrimp Pasta", type: "Dinner", servings: 4,
+        id: "r-garlic-butter-shrimp-pasta", name: "Garlic Butter Shrimp Pasta", type: "Dinner", servings: 4,
         notes: "",
         ingredients: [
           ing("linguine pasta", "12", "oz", "bakery"),
@@ -1786,6 +1799,73 @@
     } catch (e) {
       storageOk = false;
     }
+  }
+
+  // ---------- live sync (Firebase) ----------
+  // Only reachable on GitHub Pages — the claude.ai artifact's CSP blocks the
+  // outbound Firebase script/requests entirely, so this quietly no-ops there
+  // and the dashboard falls back to this-browser-only localStorage.
+
+  function fbReady() { return !!fbRef; }
+
+  function fbSetRecipe(recipe) {
+    if (!fbReady()) return;
+    try { fbRef.child("recipes").child(recipe.id).set(recipe); } catch (e) { /* offline or unreachable */ }
+  }
+  function fbDeleteRecipe(id) {
+    if (!fbReady()) return;
+    try { fbRef.child("recipes").child(id).remove(); } catch (e) { /* offline or unreachable */ }
+  }
+  function fbSetNote(note) {
+    if (!fbReady()) return;
+    try { fbRef.child("notes").child(note.id).set(note); } catch (e) { /* offline or unreachable */ }
+  }
+  function fbDeleteNote(id) {
+    if (!fbReady()) return;
+    try { fbRef.child("notes").child(id).remove(); } catch (e) { /* offline or unreachable */ }
+  }
+  function fbSetDinner(dateKey, recipeId) {
+    if (!fbReady()) return;
+    try {
+      if (recipeId) fbRef.child("dinnerPlan").child(dateKey).set(recipeId);
+      else fbRef.child("dinnerPlan").child(dateKey).remove();
+    } catch (e) { /* offline or unreachable */ }
+  }
+  function fbSetSelected(id, isSelected) {
+    if (!fbReady()) return;
+    try {
+      if (isSelected) fbRef.child("selected").child(id).set(true);
+      else fbRef.child("selected").child(id).remove();
+    } catch (e) { /* offline or unreachable */ }
+  }
+
+  function initFirebaseSync() {
+    if (typeof firebase === "undefined") return;
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      fbRef = firebase.database().ref("carreiro-dashboard-state");
+    } catch (e) { fbRef = null; return; }
+
+    fbRef.on("value", function (snapshot) {
+      var val = snapshot.val();
+      if (!val) {
+        state.recipes.forEach(fbSetRecipe);
+        state.notes.forEach(fbSetNote);
+        Object.keys(state.dinnerPlan).forEach(function (k) { fbSetDinner(k, state.dinnerPlan[k]); });
+        state.selected.forEach(function (id) { fbSetSelected(id, true); });
+        return;
+      }
+      state.recipes = val.recipes ? Object.keys(val.recipes).map(function (k) { return val.recipes[k]; }) : [];
+      state.notes = val.notes ? Object.keys(val.notes).map(function (k) { return val.notes[k]; }) : [];
+      state.dinnerPlan = val.dinnerPlan || {};
+      state.selected = val.selected ? Object.keys(val.selected) : [];
+      saveState();
+      renderFilters();
+      renderRecipes();
+      renderGroceryList();
+      renderHome();
+      renderNotes();
+    }, function () { fbRef = null; });
   }
 
   var activeFilter = "All";
@@ -1943,6 +2023,7 @@
       if (e.target.value) state.dinnerPlan[dateKey] = e.target.value;
       else delete state.dinnerPlan[dateKey];
       saveState();
+      fbSetDinner(dateKey, e.target.value || null);
       renderHome();
     });
     return select;
@@ -1973,6 +2054,7 @@
       changeBtn.addEventListener("click", function () {
         delete state.dinnerPlan[key];
         saveState();
+        fbSetDinner(key, null);
         renderHome();
       });
       container.appendChild(changeBtn);
@@ -2172,6 +2254,7 @@
         if (cb.checked && idx === -1) state.selected.push(r.id);
         if (!cb.checked && idx !== -1) state.selected.splice(idx, 1);
         saveState();
+        fbSetSelected(r.id, cb.checked);
         renderGroceryList();
       });
 
@@ -2201,6 +2284,8 @@
         state.recipes = state.recipes.filter(function (x) { return x.id !== r.id; });
         state.selected = state.selected.filter(function (id) { return id !== r.id; });
         saveState();
+        fbDeleteRecipe(r.id);
+        fbSetSelected(r.id, false);
         renderFilters();
         renderRecipes();
         renderGroceryList();
@@ -2638,6 +2723,7 @@
     }
 
     saveState();
+    fbSetRecipe(recipe);
     if (!storageOk && recipe.attachment) {
       recipe.attachment = null;
       saveState();
@@ -2736,6 +2822,7 @@
       delBtn.addEventListener("click", function () {
         state.notes = state.notes.filter(function (x) { return x.id !== n.id; });
         saveState();
+        fbDeleteNote(n.id);
         renderNotes();
       });
 
@@ -2751,8 +2838,10 @@
     var tagEl = document.getElementById("noteTag");
     var text = textEl.value.trim();
     if (!text) return;
-    state.notes.push({ id: uid(), text: text, tag: tagEl.value, createdAt: new Date().toISOString() });
+    var newNote = { id: uid(), text: text, tag: tagEl.value, createdAt: new Date().toISOString() };
+    state.notes.push(newNote);
     saveState();
+    fbSetNote(newNote);
     textEl.value = "";
     renderNotes();
   });
@@ -2766,5 +2855,6 @@
   renderHome();
   renderNotes();
   refreshCalendarData();
+  initFirebaseSync();
 })();
 </script>
